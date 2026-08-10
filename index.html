@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CrowdShield - AI-Powered Crowd Control & Stampede Prevention System">
+    <meta name="theme-color" content="#060913">
+    <title>CrowdShield - AI-Powered Crowd Control & Stampede Prevention</title>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="logo-icon">
+                    <i data-lucide="shield-alert" class="pulse-icon" aria-hidden="true"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>CROWD<span>SHIELD</span></h1>
+                    <span class="sub-text">AI Early Warning & Mitigation System</span>
+                </div>
+            </div>
+            
+            <div class="header-status-bar">
+                <div class="status-indicator safe" id="systemStatus">
+                    <span class="pulse-dot"></span>
+                    <span class="status-label">System: Active & Scanning</span>
+                </div>
+                <div class="status-indicator">
+                    <i data-lucide="activity" aria-hidden="true"></i>
+                    <span>Venue: Festival Ground A</span>
+                </div>
+                <div class="status-indicator time-display" id="timeDisplay">
+                    <i data-lucide="clock" aria-hidden="true"></i>
+                    <span>10:09:52 AM</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Workspace -->
+        <main class="dashboard-workspace">
+            
+            <!-- LEFT PANEL: Metrics & Interventions -->
+            <section class="dashboard-panel panel-left glass-panel">
+                <div class="panel-header">
+                    <i data-lucide="gauge" aria-hidden="true"></i>
+                    <h2>Risk Indicators</h2>
+                </div>
+                
+                <!-- Metrics Container -->
+                <div class="metrics-grid">
+                    <div class="metric-card risk-gauge-card">
+                        <span class="metric-title">Stampede Likelihood</span>
+                        <div class="gauge-wrapper">
+                            <svg class="gauge-svg" viewBox="0 0 100 50" aria-label="Stampede likelihood gauge">
+                                <path class="gauge-bg" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke-width="8" stroke-linecap="round"/>
+                                <path class="gauge-fill safe" id="likelihoodGauge" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="126"/>
+                            </svg>
+                            <div class="gauge-value" id="likelihoodVal">12%</div>
+                        </div>
+                        <span class="gauge-status safe" id="gaugeStatusText">Normal Flow</span>
+                    </div>
+
+                    <div class="metric-card-group">
+                        <div class="metric-card small-card" id="crushRiskCard">
+                            <span class="card-label">Crush Risk Level</span>
+                            <span class="card-val safe" id="crushRiskVal">LOW</span>
+                        </div>
+                        <div class="metric-card small-card" id="panicIndexCard">
+                            <span class="card-label">Panic Index</span>
+                            <span class="card-val" id="panicIndexVal">0.05</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-list-group">
+                    <div class="list-metric-item">
+                        <span class="item-label">Crowd Density (est.)</span>
+                        <span class="item-val" id="crowdDensityVal">1.2 P/m²</span>
+                    </div>
+                    <div class="list-metric-item">
+                        <span class="item-label">Avg Movement Speed</span>
+                        <span class="item-val" id="avgSpeedVal">1.4 m/s</span>
+                    </div>
+                    <div class="list-metric-item">
+                        <span class="item-label">Active Bottlenecks</span>
+                        <span class="item-val warning-text" id="bottleneckCount">0 Detected</span>
+                    </div>
+                </div>
+
+                <!-- AI Recommendations -->
+                <div class="panel-section recommendations-section">
+                    <div class="section-header">
+                        <i data-lucide="zap" class="ai-glow-icon" aria-hidden="true"></i>
+                        <h3>AI Live Recommendations</h3>
+                    </div>
+                    <div class="recommendations-container" id="recommendationsList">
+                        <div class="empty-recommendation">
+                            <i data-lucide="check-circle-2" aria-hidden="true"></i>
+                            <p>Crowd flow is currently optimal. No immediate actions required.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voice Command Center -->
+                <div class="panel-section voice-command-section">
+                    <div class="section-header">
+                        <i data-lucide="mic" aria-hidden="true"></i>
+                        <h3>Voice Command Control</h3>
+                    </div>
+                    <div class="voice-input-wrapper">
+                        <input type="text" id="voiceCommandInput" placeholder="Try: 'open gate 3' or 'redirect crowd'..." aria-label="Voice command input" />
+                        <button class="voice-btn" id="voiceMicBtn" title="Simulate voice input" aria-label="Simulate voice command">
+                            <i data-lucide="mic" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="voice-presets">
+                        <span class="preset-tag" onclick="runVoiceCommand('deploy security to gate 2')">"Deploy security to Gate 2"</span>
+                        <span class="preset-tag" onclick="runVoiceCommand('open gate 3')">"Open Gate 3"</span>
+                        <span class="preset-tag" onclick="runVoiceCommand('trigger evacuation')">"Trigger Evacuation"</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MIDDLE PANEL: Live Digital Twin Map & Controls -->
+            <section class="dashboard-panel panel-center">
+                
+                <!-- Digital Twin Map Card -->
+                <div class="map-card glass-panel">
+                    <div class="map-header">
+                        <div class="map-title-wrapper">
+                            <i data-lucide="map" aria-hidden="true"></i>
+                            <h2>Digital Twin: Live Venue Map</h2>
+                        </div>
+                        <div class="map-controls">
+                            <button class="map-control-btn active" id="btnToggleHeatmap" title="Toggle heatmap visualization">
+                                <i data-lucide="layers" aria-hidden="true"></i>
+                                <span>Heatmap</span>
+                            </button>
+                            <button class="map-control-btn active" id="btnToggleRiskZones" title="Toggle risk zones">
+                                <i data-lucide="zap" aria-hidden="true"></i>
+                                <span>Risk Zones</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Area -->
+                    <div class="canvas-container">
+                        <canvas id="digitalTwinCanvas" width="800" height="500"></canvas>
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #3b82f6;"></span>
+                            <span>Crowd Members</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #3b82f6;"></span>
+                            <span>Security Units</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ef4444;"></span>
+                            <span>Hazard Zone</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Mobile Companion & Logs -->
+            <section class="dashboard-panel panel-right">
+                
+                <!-- System Logs -->
+                <div class="logs-card glass-panel">
+                    <div class="logs-header">
+                        <i data-lucide="list" aria-hidden="true"></i>
+                        <h2>System Logs</h2>
+                    </div>
+                    <div class="logs-content" id="logsContent">
+                        <!-- Logs will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Mobile Companion Simulation -->
+                <div class="mobile-companion glass-panel">
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            
+                            <!-- Phone Screen Top Status -->
+                            <div class="phone-status-bar">
+                                <span class="phone-time" id="phoneTime">10:09</span>
+                                <div class="phone-status-icons">
+                                    <i data-lucide="wifi" class="phone-icon-small" aria-hidden="true"></i>
+                                    <i data-lucide="signal" class="phone-icon-small" aria-hidden="true"></i>
+                                    <i data-lucide="battery" class="phone-icon-small" aria-hidden="true"></i>
+                                </div>
+                            </div>
+
+                            <!-- Phone App Header -->
+                            <header class="phone-app-header">
+                                <div class="phone-brand">
+                                    <i data-lucide="shield-check" class="phone-logo" aria-hidden="true"></i>
+                                    <span>CrowdShield Mobile</span>
+                                </div>
+                                <span class="phone-badge live">LIVE</span>
+                            </header>
+
+                            <!-- Phone App Body (Scrollable) -->
+                            <div class="phone-app-body" id="phoneAppBody">
+                                
+                                <!-- User Location Alert -->
+                                <div class="phone-location-card">
+                                    <div class="location-header">
+                                        <i data-lucide="map-pin" aria-hidden="true"></i>
+                                        <span>YOUR CURRENT LOCATION</span>
+                                    </div>
+                                    <div class="location-zone">Zone B (Central Corridor)</div>
+                                    <div class="location-detail">Distance to Main Exit: 140m</div>
+                                </div>
+
+                                <!-- Live Broadcast Alert -->
+                                <div class="phone-alert-card safe" id="phoneAlertCard">
+                                    <div class="phone-alert-header">
+                                        <i data-lucide="info" id="phoneAlertIcon" aria-hidden="true"></i>
+                                        <strong id="phoneAlertTitle">No Congestion Alerts</strong>
+                                    </div>
+                                    <p id="phoneAlertDesc">The crowd is moving smoothly. Follow standard lanes to the shrine and exits.</p>
+                                </div>
+
+                                <!-- Interactive Citizen Walk simulator -->
+                                <div class="phone-section-card">
+                                    <h4>Interactive Walk Simulation</h4>
+                                    <p class="section-desc">Test how the dashboard tracks and alerts an individual citizen as they walk through high-risk zones.</p>
+                                    <button class="phone-action-btn" id="btnSimulateCitizenWalk" aria-label="Toggle citizen walk simulation">
+                                        <i data-lucide="footprints" aria-hidden="true"></i>
+                                        <span id="citizenWalkBtnText">Place Citizen on Venue Map</span>
+                                    </button>
+                                </div>
+
+                                <!-- Multilingual Audio Player -->
+                                <div class="phone-section-card audio-player-card">
+                                    <h4>Voice Announcements (Broadcasting)</h4>
+                                    <div class="audio-player-status" id="audioPlayerStatus">
+                                        <i data-lucide="volume-x" aria-hidden="true"></i> No broadcast currently active
+                                    </div>
+                                    <div class="audio-controls-mock">
+                                        <div class="announcement-wave" id="announcementWave">
+                                            <span></span><span></span><span></span><span></span><span></span>
+                                        </div>
+                                        <div class="voice-selection-box">
+                                            <label for="announcementLangSelect">Language:</label>
+                                            <select id="announcementLangSelect" aria-label="Select announcement language">
+                                                <option value="en">English</option>
+                                                <option value="hi">Hindi (हिन्दी)</option>
+                                                <option value="ta">Tamil (தமிழ்)</option>
+                                                <option value="bn">Bengali (বাংলা)</option>
+                                            </select>
+                                        </div>
+                                        <button class="phone-play-btn" id="btnPlayAnnouncement" aria-label="Play warning announcement">
+                                            <i data-lucide="volume-2" aria-hidden="true"></i> Play Warning Audio
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Incident Reporting Form -->
+                                <div class="phone-section-card incident-form-card">
+                                    <h4>Report Crowding / Incident</h4>
+                                    <p class="section-desc">Report abnormal crowd conditions directly to the Control Room.</p>
+                                    <form id="incidentReportForm">
+                                        <div class="form-group">
+                                            <label for="incidentType">Incident Type</label>
+                                            <select id="incidentType" required aria-label="Select incident type">
+                                                <option value="" disabled selected>Select Incident Type</option>
+                                                <option value="crowding">Abnormal Crowd Surge</option>
+                                                <option value="blockage">Barricade / Route Obstruction</option>
+                                                <option value="panic">Sudden Commotion / Panic</option>
+                                                <option value="medical">Medical Emergency</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="incidentLocation">Select Location Zone</label>
+                                            <select id="incidentLocation" required aria-label="Select incident location">
+                                                <option value="gate1">Gate 1 (North Entrance)</option>
+                                                <option value="gate2">Gate 2 (West Entrance)</option>
+                                                <option value="central">Central Corridor (Bottleneck Area)</option>
+                                                <option value="shrine">Main Shrine Area</option>
+                                                <option value="gate3">Gate 3 (Exit Area)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="incidentDetails">Details (Optional)</label>
+                                            <textarea id="incidentDetails" rows="2" placeholder="Describe the crowd size or obstruction..." aria-label="Additional incident details"></textarea>
+                                        </div>
+                                        <button type="submit" class="phone-submit-btn" aria-label="Submit incident report">
+                                            <i data-lucide="send" aria-hidden="true"></i> Submit to Control Room
+                                        </button>
+                                    </form>
+                                </div>
+
+                            </div>
+                            
+                            <!-- Phone Navigation Bar -->
+                            <div class="phone-navbar">
+                                <div class="phone-nav-item active">
+                                    <i data-lucide="home" aria-hidden="true"></i>
+                                    <span>Home</span>
+                                </div>
+                                <div class="phone-nav-item" onclick="alert('Emergency SOS triggered! GPS location broadcasting to security staff.');">
+                                    <div class="sos-button">SOS</div>
+                                </div>
+                                <div class="phone-nav-item" onclick="scrollToIncidentForm()">
+                                    <i data-lucide="alert-octagon" aria-hidden="true"></i>
+                                    <span>Report</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                
+            </section>
+        </main>
+    </div>
+
+    <!-- Scenario Control Panel (Moved to Bottom for Mobile) -->
+    <div class="scenario-control-panel glass-panel">
+        <h3>Simulation Scenarios</h3>
+        <div class="scenario-buttons">
+            <button class="scenario-btn active" id="btnNormalFlow" aria-label="Activate normal flow scenario">Normal Flow</button>
+            <button class="scenario-btn" id="btnCrowdSurge" aria-label="Activate crowd surge scenario">Crowd Surge</button>
+            <button class="scenario-btn" id="btnGateBlockage" aria-label="Activate gate blockage scenario">Gate Blockage</button>
+            <button class="scenario-btn" id="btnPanic" aria-label="Activate panic scenario">Panic</button>
+        </div>
+    </div>
+
+    <!-- Application Scripts (Load in correct order) -->
+    <!-- 1. Configuration -->
+    <script src="config.js"></script>
+    
+    <!-- 2. State Management -->
+    <script src="state.js"></script>
+    
+    <!-- 3. Core Systems -->
+    <script src="particle-system.js"></script>
+    <script src="canvas-renderer.js"></script>
+    
+    <!-- 4. UI & Interactions -->
+    <script src="ui-updates.js"></script>
+    <script src="voice-commands.js"></script>
+    <script src="events.js"></script>
+    
+    <!-- 5. Main Application -->
+    <script src="app.js"></script>
+</body>
+</html>
