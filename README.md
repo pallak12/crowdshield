@@ -30,6 +30,8 @@ cp .env.example .env
 npm start
 ```
 
+To enable front-end integration with the backend stub, open `config.js` and set `BACKEND.BASE_URL` to the backend endpoint and `BACKEND.API_TOKEN` to the same token used by the backend.
+
 ### API usage
 
 - `POST /api/log` — receive structured log events from the front-end

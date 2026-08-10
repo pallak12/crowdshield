@@ -98,17 +98,17 @@ class UIManager {
 
             // Update panic index
             if (this.panicIndexVal) {
-                this.panicIndexVal.innerText = metrics.panicIndex.toFixed(2);
+                this.panicIndexVal.innerText = Number(metrics.panicIndex || 0).toFixed(2);
             }
-
+ 
             // Update crowd density
             if (this.crowdDensityVal) {
-                this.crowdDensityVal.innerText = metrics.crowdDensity.toFixed(1) + ' P/m²';
+                this.crowdDensityVal.innerText = Number(metrics.crowdDensity || 0).toFixed(1) + ' P/m²';
             }
-
+ 
             // Update average speed
             if (this.avgSpeedVal) {
-                this.avgSpeedVal.innerText = metrics.avgMovementSpeed.toFixed(1) + ' m/s';
+                this.avgSpeedVal.innerText = Number(metrics.avgMovementSpeed || 0).toFixed(1) + ' m/s';
             }
 
             // Update bottleneck count

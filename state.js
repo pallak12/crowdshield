@@ -171,6 +171,12 @@ class StateManager {
             }
 
             this.set('logs', [...logs]);
+
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                const eventType = source && source.toLowerCase().includes('voice') ? 'voice_command' : 'system_event';
+                backendClient.sendEventLog(eventType, type, message, source);
+            }
+
             return true;
         } catch (error) {
             console.error('Error adding log:', error);

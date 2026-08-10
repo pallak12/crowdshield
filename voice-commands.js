@@ -78,6 +78,9 @@ class VoiceCommandProcessor {
 
             // Log command
             appState.addLog('Operator Speech', `Voice command input: "${commandText}"`, 'system');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendEventLog('voice_command', 'info', commandText, 'operator_console');
+            }
 
             // Match against patterns
             for (const [key, config] of Object.entries(this.commandPatterns)) {
@@ -111,6 +114,9 @@ class VoiceCommandProcessor {
             appState.setIntervention('gate3Open', true);
             appState.setScenario('normal');
             appState.addLog('Voice Control', 'Success: Gate 3 exits opened', 'info');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendAction('open_gate_3', 'operator_console', true);
+            }
             uiManager.updatePhoneAlert('Gate Status', 'Gate 3 exits are now OPEN', 'safe');
         } catch (error) {
             console.error('Error in handleOpenGate3:', error);
@@ -140,6 +146,9 @@ class VoiceCommandProcessor {
             }
 
             appState.addLog('Voice Control', 'Success: Security deployed to bottleneck', 'info');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendAction('deploy_security', 'operator_console', true);
+            }
             uiManager.showNotification('Security personnel deployed', 'info');
         } catch (error) {
             console.error('Error in handleDeploySecurity:', error);
@@ -155,6 +164,9 @@ class VoiceCommandProcessor {
         try {
             appState.setIntervention('gate1Closed', true);
             appState.addLog('Voice Control', 'Success: Gate 1 input restricted', 'info');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendAction('close_gate_1', 'operator_console', true);
+            }
             uiManager.updatePhoneAlert('Gate Status', 'Gate 1 entrance is now CLOSED', 'warning');
         } catch (error) {
             console.error('Error in handleCloseGate1:', error);
@@ -176,6 +188,9 @@ class VoiceCommandProcessor {
             playCurrentAnnouncement();
 
             appState.addLog('Voice Control', 'Critical: Evacuation routing engaged', 'danger');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendAction('trigger_evacuation', 'operator_console', true);
+            }
             uiManager.updatePhoneAlert('🚨 EVACUATION', 'Emergency evacuation in progress. Follow exit routes immediately', 'danger');
         } catch (error) {
             console.error('Error in handleEvacuation:', error);
@@ -191,6 +206,9 @@ class VoiceCommandProcessor {
         try {
             appState.setIntervention('crowdRedirected', true);
             appState.addLog('Voice Control', 'Success: Crowd flow redirected', 'info');
+            if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+                backendClient.sendAction('redirect_crowd', 'operator_console', true);
+            }
             uiManager.showNotification('Crowd flow redirected', 'info');
         } catch (error) {
             console.error('Error in handleRedirectCrowd:', error);

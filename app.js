@@ -54,7 +54,10 @@ async function initializeApp() {
         // 7. Start update loops
         startUpdateLoops();
 
-        // 8. Start animation loop
+        // 8. Load backend recommendations when available
+        await loadBackendRecommendations();
+
+        // 9. Start animation loop
         startAnimationLoop();
 
         // 9. Initial scenario
@@ -209,7 +212,38 @@ function startAnimationLoop() {
         console.error('Error starting animation loop:', error);
     }
 }
-
+ 
+/**
+ * Load recommendations from the secure backend if available
+ */
+async function loadBackendRecommendations() {
+    try {
+        if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+            const recommendations = await backendClient.fetchRecommendations();
+            if (Array.isArray(recommendations) && recommendations.length > 0) {
+                const mappedRecs = recommendations.map((rec, index) => ({
+                    id: rec.id || `backend-rec-${index}`,
+                    type: rec.type || 'warning',
+                    title: rec.title || 'Recommended action from backend',
+                    desc: rec.description || rec.desc || '',
+                    actionLabel: 'Execute Recommended Action',
+                    action: () => {
+                        if (typeof rec.action === 'string') {
+                            runVoiceCommand(rec.action);
+                        } else {
+                            console.log('Backend recommendation selected:', rec);
+                        }
+                    }
+                }));
+                appState.set('activeRecommendations', mappedRecs);
+                appState.addLog('Backend', 'Loaded recommendations from secure backend', 'info');
+            }
+        }
+    } catch (error) {
+        console.warn('Unable to load backend recommendations:', error);
+    }
+}
+ 
 /**
  * Update all metrics based on current state
  */
@@ -407,8 +441,14 @@ function calculateAIRecommendations() {
             });
         }
 
-        // Update state
-        appState.set('activeRecommendations', recommendations);
+        // Preserve backend recommendations if present and merge with local recommendations
+        const remoteRecommendations = (appState.get('activeRecommendations') || []).filter(rec => typeof rec.id === 'string' && rec.id.startsWith('backend-rec-'));
+        const merged = [...recommendations];
+        if (remoteRecommendations.length) {
+            merged.push(...remoteRecommendations);
+        }
+
+        appState.set('activeRecommendations', merged);
     } catch (error) {
         console.error('Error calculating AI recommendations:', error);
     }

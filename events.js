@@ -447,9 +447,12 @@ function submitIncidentReport(event) {
             return;
         }
 
-        appState.addLog('Incident Report', 
-            `${incidentType} reported at ${location}: ${details || 'No additional details'}`, 
-            'danger');
+        const summary = `${incidentType} reported at ${location}: ${details || 'No additional details'}`;
+        appState.addLog('Incident Report', summary, 'danger');
+
+        if (typeof backendClient !== 'undefined' && backendClient.isEnabled()) {
+            backendClient.sendEventLog('system_event', 'danger', summary, 'operator_console');
+        }
 
         uiManager.showNotification('Incident report submitted to control room', 'info');
 

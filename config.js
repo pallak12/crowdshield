@@ -113,6 +113,11 @@ const CONFIG = {
         }
     },
 
+    BACKEND: {
+        BASE_URL: 'http://localhost:4000',
+        API_TOKEN: '' // Set a valid token for local backend integration
+    },
+
     // Colors
     COLORS: {
         SAFE: '#10b981',
