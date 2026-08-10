@@ -2,3 +2,5 @@
 .DS_Store
 .env
 
+backend/node-portable/
+backend/node-v24.19.0-win-x64.zip
