@@ -261,6 +261,22 @@ class StateManager {
     }
 
     /**
+     * Reset metrics to their neutral baseline values
+     */
+    resetMetrics() {
+        this.state.metrics = {
+            crowdDensity: 1.2,
+            avgSpeed: 1.4,
+            stampedeLikelihood: 12,
+            crushRiskLevel: 'LOW',
+            panicIndex: 0.05,
+            bottlenecks: 0,
+            avgMovementSpeed: 1.4
+        };
+        return true;
+    }
+
+    /**
      * Get current intervention state
      */
     getInterventions() {
@@ -285,6 +301,7 @@ class StateManager {
             evacuating: false
         };
         this.state.currentScenario = 'normal';
+        this.resetMetrics();
     }
 
     /**

@@ -282,10 +282,27 @@ const eventManager = new EventManager();
  */
 function handleScenarioChange(scenario) {
     try {
+        appState.setScenario(scenario);
+        appState.resetMetrics();
+        appState.clearRecommendations();
+
         // Reset particles
         const particleSystem = window.particleSystem;
         if (particleSystem) {
             particleSystem.reset();
+        }
+
+        // Reset all interventions
+        appState.setIntervention('gate3Open', scenario !== 'blockage');
+        appState.setIntervention('gate1Closed', false);
+        appState.setIntervention('securityDeployed', false);
+        appState.setIntervention('crowdRedirected', false);
+        appState.setIntervention('evacuating', false);
+
+        // Reset security units to home bases
+        const canvas = document.getElementById('digitalTwinCanvas');
+        if (canvas && typeof initializeSecurityUnits === 'function') {
+            initializeSecurityUnits(canvas.width, canvas.height);
         }
 
         // Update button states
@@ -307,23 +324,33 @@ function handleScenarioChange(scenario) {
         const scenarioMessages = {
             'normal': 'Normal Flow Activated. Stable visitor routing applied.',
             'surge': 'Crowd Surge Scenario Activated. Inflow multiplied.',
-            'blockage': 'Exit Gate Blockage Scenario Activated.',
+            'blockage': 'Exit Gate Blockage Scenario Activated (Gate 3 Closed).',
             'panic': 'Panic Propagation Scenario Activated. Disturbance reported.'
         };
 
         appState.addLog('Scenario', scenarioMessages[scenario], 
             scenario === 'panic' ? 'danger' : 'warning');
 
-        // Handle panic induction
+
+        if (typeof updateMetrics === 'function') {
+            updateMetrics();
+        }
+
+        // Handle panic induction (delayed so particles have spawned)
         if (scenario === 'panic' && particleSystem) {
-            const canvas = document.getElementById('digitalTwinCanvas');
-            if (canvas) {
-                particleSystem.inducePanic(
-                    canvas.width / 2,
-                    canvas.height / 2,
-                    100
-                );
-            }
+            setTimeout(() => {
+                // Ensure we are still in panic scenario
+                if (appState.get('currentScenario') === 'panic') {
+                    const canvas = document.getElementById('digitalTwinCanvas');
+                    if (canvas) {
+                        particleSystem.inducePanic(
+                            canvas.width / 2,
+                            canvas.height / 2,
+                            120
+                        );
+                    }
+                }
+            }, 2000); // 2 seconds delay
         }
     } catch (error) {
         console.error('Error handling scenario change:', error);

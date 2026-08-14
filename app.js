@@ -416,42 +416,48 @@ function updateSystemStatus(likelihood) {
         const particles = appState.get('particles') || [];
         const count = particles.length || 0;
 
-        // If there is essentially no crowd, don't show any alerts
-        if (count <= 5) {
+            // Use metrics when deciding whether to suppress alerts for tiny crowds
+        const metrics = appState.get('metrics') || {};
+        const panicIndex = Number(metrics.panicIndex) || 0;
+        const reportedLikelihood = Number(metrics.stampedeLikelihood) || likelihood || 0;
+
+        // If there is essentially no crowd and metrics don't indicate risk, suppress alerts
+        if (count <= 5 && panicIndex < CONFIG.THRESHOLDS.PANIC_THRESHOLD && reportedLikelihood < CONFIG.RISK.WARNING_THRESHOLD) {
             uiManager.updateSystemStatus('active');
             uiManager.updatePhoneAlert('No Congestion Alerts', 'The crowd is moving smoothly.', 'safe');
             return;
         }
 
-        // Default thresholds
-        const danger = CONFIG.RISK.DANGER_THRESHOLD;
-        const warning = CONFIG.RISK.WARNING_THRESHOLD;
+        // Compute effective thresholds based on scenario bias
+        let danger = Number(CONFIG.RISK.DANGER_THRESHOLD);
+        let warning = Number(CONFIG.RISK.WARNING_THRESHOLD);
+        const bias = CONFIG.RISK.SCENARIO_BIAS || {};
 
-        // Scenario-driven mapping requested by user:
-        // - normal: green unless metrics demand otherwise
-        // - surge: more severe than normal (prefer warning -> critical)
-        // - blockage: orange (warning) unless extremely risky
-        // - panic/risk: red (critical)
+        if (scenario === 'surge') {
+            warning = Math.max(0, warning - (bias.surge?.warningDelta || 15));
+            danger = Math.max(warning + 1, danger - (bias.surge?.dangerDelta || 10));
+        } else if (scenario === 'blockage') {
+            warning = Math.max(0, warning - (bias.blockage?.warningDelta || 8));
+            danger = Math.max(warning + 1, danger - (bias.blockage?.dangerDelta || 5));
+        }
+
+        // Scenario-aware mapping, but still driven by metrics (recommended behavior)
         let status = 'active';
 
-        if (scenario === 'normal') {
-            if (likelihood > danger) status = 'critical';
-            else if (likelihood > warning) status = 'warning';
-            else status = 'active';
-        } else if (scenario === 'surge') {
-            // Surge should be more than normal: escalate one level
-            if (likelihood > warning) status = 'critical';
-            else status = 'warning';
-        } else if (scenario === 'blockage') {
-            // Blockage primarily shows as warning/orange unless critical
-            if (likelihood > danger) status = 'critical';
-            else status = 'warning';
-        } else if (scenario === 'panic') {
-            status = 'critical';
+        if (scenario === 'panic') {
+            // For panic, require either a measurable panicIndex or high likelihood before forcing critical
+            const panicTrigger = bias.panic?.panicIndexTrigger || CONFIG.THRESHOLDS.PANIC_THRESHOLD;
+            if (panicIndex >= panicTrigger || reportedLikelihood >= warning) {
+                status = 'critical';
+            } else if (reportedLikelihood > warning) {
+                status = 'warning';
+            } else {
+                status = 'active';
+            }
         } else {
-            // Fallback to metric-driven mapping
-            if (likelihood > danger) status = 'critical';
-            else if (likelihood > warning) status = 'warning';
+            // Metric-driven with effective thresholds
+            if (reportedLikelihood > danger) status = 'critical';
+            else if (reportedLikelihood > warning) status = 'warning';
             else status = 'active';
         }
 

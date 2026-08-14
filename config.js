@@ -75,8 +75,15 @@ const CONFIG = {
         PANIC_WEIGHT: 0.25,
         SAFE_THRESHOLD: 25,
         WARNING_THRESHOLD: 60,
-        DANGER_THRESHOLD: 85
+        DANGER_THRESHOLD: 85,
+        // Scenario bias: how scenarios adjust effective thresholds (values are in percentage points)
+        SCENARIO_BIAS: {
+            surge: { warningDelta: 15, dangerDelta: 10 },
+            blockage: { warningDelta: 8, dangerDelta: 5 },
+            panic: { panicIndexTrigger: 0.2 }
+        }
     },
+
 
     // UI Updates
     UI: {
