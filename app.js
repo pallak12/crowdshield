@@ -245,6 +245,42 @@ async function loadBackendRecommendations() {
 }
  
 /**
+ * Calculate peak local crowd density (max count in a 50x50 grid cell)
+ * @private
+ */
+function calculatePeakLocalDensity() {
+    try {
+        const particles = appState.get('particles') || [];
+        if (particles.length === 0) return 0;
+
+        const gridSize = CONFIG.DENSITY.GRID_SIZE || 50;
+        const grid = {};
+
+        particles.forEach(p => {
+            // Exclude particles close to entrance gates (spawning zone x < 120)
+            // to avoid artificial spawning density from inflating risk ratings.
+            if (p.x < 120) return;
+
+            const cx = Math.floor(p.x / gridSize);
+            const cy = Math.floor(p.y / gridSize);
+            const key = `${cx},${cy}`;
+            grid[key] = (grid[key] || 0) + 1;
+        });
+
+        let peakCount = 0;
+        for (const key in grid) {
+            if (grid[key] > peakCount) {
+                peakCount = grid[key];
+            }
+        }
+        return peakCount;
+    } catch (error) {
+        console.error('Error calculating peak local density:', error);
+        return 0;
+    }
+}
+
+/**
  * Update all metrics based on current state
  */
 function updateMetrics() {
@@ -252,8 +288,8 @@ function updateMetrics() {
         const particles = appState.get('particles') || [];
         const scenario = appState.get('currentScenario');
 
-        // Calculate crowd density (people per m²)
-        const crowdDensity = particles.length > 0 ? Math.min(particles.length / 50, 10) : 0;
+        // Calculate peak local crowd density
+        const crowdDensity = calculatePeakLocalDensity();
 
         // Calculate average movement speed
         let totalSpeed = 0;
@@ -278,13 +314,13 @@ function updateMetrics() {
 
         likelihood = Math.round(Math.min(likelihood, 100));
 
-        // Determine crush risk level
+        // Determine crush risk level based on local density thresholds
         let crushRiskLevel = 'LOW';
-        if (crowdDensity > CONFIG.DENSITY.DANGER_THRESHOLD) {
+        if (crowdDensity >= CONFIG.DENSITY.CRITICAL_THRESHOLD) {
             crushRiskLevel = 'CRITICAL';
-        } else if (crowdDensity > CONFIG.DENSITY.WARNING_THRESHOLD) {
+        } else if (crowdDensity >= CONFIG.DENSITY.DANGER_THRESHOLD) {
             crushRiskLevel = 'HIGH';
-        } else if (crowdDensity > CONFIG.DENSITY.NORMAL_THRESHOLD) {
+        } else if (crowdDensity >= CONFIG.DENSITY.WARNING_THRESHOLD) {
             crushRiskLevel = 'MEDIUM';
         }
 
@@ -313,11 +349,23 @@ function updateMetrics() {
  * @private
  */
 function calculateCrushRisk(density) {
-    if (density > CONFIG.DENSITY.CRITICAL_THRESHOLD) return 100;
-    if (density > CONFIG.DENSITY.DANGER_THRESHOLD) return 75;
-    if (density > CONFIG.DENSITY.WARNING_THRESHOLD) return 50;
-    if (density > CONFIG.DENSITY.NORMAL_THRESHOLD) return 25;
-    return 0;
+    try {
+        // Scale crush risk proportionally to the configured CRITICAL_THRESHOLD instead of
+        // jumping between fixed buckets. This produces more graded alerting that follows
+        // the observed simulation values.
+        const crit = Number(CONFIG.DENSITY.CRITICAL_THRESHOLD) || 10;
+        if (density <= 0) return 0;
+        const scaled = Math.round((density / crit) * 100);
+        return Math.max(0, Math.min(100, scaled));
+    } catch (e) {
+        console.error('Error in calculateCrushRisk:', e);
+        // fall back to previous behavior
+        if (density >= CONFIG.DENSITY.CRITICAL_THRESHOLD) return 100;
+        if (density >= CONFIG.DENSITY.DANGER_THRESHOLD) return 75;
+        if (density >= CONFIG.DENSITY.WARNING_THRESHOLD) return 50;
+        if (density >= CONFIG.DENSITY.NORMAL_THRESHOLD) return 25;
+        return 0;
+    }
 }
 
 /**

@@ -37,7 +37,7 @@ const CONFIG = {
 
     // Crowd Metrics & Detection
     DENSITY: {
-        GRID_SIZE: 50,
+        GRID_SIZE: 25,
         NORMAL_THRESHOLD: 3,
         WARNING_THRESHOLD: 8,
         DANGER_THRESHOLD: 15,
