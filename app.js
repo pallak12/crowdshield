@@ -411,13 +411,60 @@ function detectBottlenecks() {
  */
 function updateSystemStatus(likelihood) {
     try {
-        let status = 'active';
-        if (likelihood > CONFIG.RISK.DANGER_THRESHOLD) {
-            status = 'critical';
-        } else if (likelihood > CONFIG.RISK.WARNING_THRESHOLD) {
-            status = 'warning';
+        // Decide system status with scenario-aware rules and minimum crowd guard
+        const scenario = appState.get('currentScenario');
+        const particles = appState.get('particles') || [];
+        const count = particles.length || 0;
+
+        // If there is essentially no crowd, don't show any alerts
+        if (count <= 5) {
+            uiManager.updateSystemStatus('active');
+            uiManager.updatePhoneAlert('No Congestion Alerts', 'The crowd is moving smoothly.', 'safe');
+            return;
         }
+
+        // Default thresholds
+        const danger = CONFIG.RISK.DANGER_THRESHOLD;
+        const warning = CONFIG.RISK.WARNING_THRESHOLD;
+
+        // Scenario-driven mapping requested by user:
+        // - normal: green unless metrics demand otherwise
+        // - surge: more severe than normal (prefer warning -> critical)
+        // - blockage: orange (warning) unless extremely risky
+        // - panic/risk: red (critical)
+        let status = 'active';
+
+        if (scenario === 'normal') {
+            if (likelihood > danger) status = 'critical';
+            else if (likelihood > warning) status = 'warning';
+            else status = 'active';
+        } else if (scenario === 'surge') {
+            // Surge should be more than normal: escalate one level
+            if (likelihood > warning) status = 'critical';
+            else status = 'warning';
+        } else if (scenario === 'blockage') {
+            // Blockage primarily shows as warning/orange unless critical
+            if (likelihood > danger) status = 'critical';
+            else status = 'warning';
+        } else if (scenario === 'panic') {
+            status = 'critical';
+        } else {
+            // Fallback to metric-driven mapping
+            if (likelihood > danger) status = 'critical';
+            else if (likelihood > warning) status = 'warning';
+            else status = 'active';
+        }
+
         uiManager.updateSystemStatus(status);
+
+        // Update phone alert message succinctly according to final status
+        if (status === 'active') {
+            uiManager.updatePhoneAlert('No Congestion Alerts', 'The crowd is moving smoothly.', 'safe');
+        } else if (status === 'warning') {
+            uiManager.updatePhoneAlert('Elevated Crowd Levels', 'Please monitor flow and consider deploying staff.', 'warning');
+        } else if (status === 'critical') {
+            uiManager.updatePhoneAlert('Critical Crowd Risk', 'Immediate action required: deploy interventions and follow emergency procedures.', 'danger');
+        }
     } catch (error) {
         console.error('Error updating system status:', error);
     }
