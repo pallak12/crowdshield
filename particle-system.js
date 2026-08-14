@@ -353,11 +353,11 @@ class ParticleSystem {
             const particles = appState.get('particles') || [];
             const scenario = appState.get('currentScenario');
 
-            // Spawn new particles based on scenario
+            // Spawn new particles based on scenario (steady-state flow)
+            const maxParticles = scenario === 'surge' ? CONFIG.PARTICLE.COUNT * 1.5 : CONFIG.PARTICLE.COUNT;
             const spawnRate = scenario === 'surge' ? CONFIG.PARTICLE.SPAWN_RATE * 2 : CONFIG.PARTICLE.SPAWN_RATE;
-            if (this.particleCounter < CONFIG.PARTICLE.COUNT) {
-                this.spawn(spawnRate);
-                this.particleCounter += spawnRate;
+            if (particles.length < maxParticles) {
+                this.spawn(Math.min(spawnRate, maxParticles - particles.length));
             }
 
             // Update existing particles

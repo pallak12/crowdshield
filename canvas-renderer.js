@@ -82,17 +82,21 @@ class CanvasRenderer {
             const colsCount = Math.ceil(w / gridSize);
             const rowCount = Math.ceil(h / gridSize);
 
-            // Initialize heatmap if needed
-            if (this.heatmapData.length === 0) {
+            // Guard against invalid sizes
+            if (!gridSize || colsCount <= 0 || rowCount <= 0) return;
+
+            // Initialize or resize heatmap if needed
+            if (this.heatmapData.length !== rowCount || (this.heatmapData[0] && this.heatmapData[0].length !== colsCount)) {
                 this.heatmapData = Array(rowCount).fill(0).map(() => Array(colsCount).fill(0));
             }
 
             // Decay heatmap
-            this.heatmapData.forEach(row => {
-                for (let i = 0; i < row.length; i++) {
-                    row[i] *= CONFIG.CANVAS.HEATMAP_DECAY_RATE;
+            for (let r = 0; r < this.heatmapData.length; r++) {
+                const rowArr = this.heatmapData[r] || [];
+                for (let i = 0; i < rowArr.length; i++) {
+                    rowArr[i] = (rowArr[i] || 0) * CONFIG.CANVAS.HEATMAP_DECAY_RATE;
                 }
-            });
+            }
 
             // Update heatmap based on particle positions
             const particles = appState.get('particles') || [];
@@ -100,14 +104,15 @@ class CanvasRenderer {
                 let col = Math.floor(p.x / gridSize);
                 let row = Math.floor(p.y / gridSize);
                 if (row >= 0 && row < rowCount && col >= 0 && col < colsCount) {
-                    this.heatmapData[row][col] += 1;
+                    this.heatmapData[row][col] = (this.heatmapData[row][col] || 0) + 1;
                 }
             });
 
             // Draw heatmap
             for (let row = 0; row < rowCount; row++) {
+                const rowArr = this.heatmapData[row] || [];
                 for (let col = 0; col < colsCount; col++) {
-                    const value = this.heatmapData[row][col];
+                    const value = rowArr[col] || 0;
                     if (value > 0) {
                         const hue = Math.max(0, 200 - (value * 20));
                         this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${Math.min(0.4, value * 0.1)})`;

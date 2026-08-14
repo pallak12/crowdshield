@@ -16,9 +16,10 @@ const CONFIG = {
 
     // Particle (Crowd) Simulation
     PARTICLE: {
-        COUNT: 150,
+        // Reduced default population and spawn rate for more realistic alerts
+        COUNT: 80,
         RADIUS: 4,
-        SPAWN_RATE: 2,
+        SPAWN_RATE: 1,
         BASE_SPEED: 1.0,
         SPEED_VARIANCE: 0.8,
         SPEED_PANIC: 2.5,
@@ -36,11 +37,11 @@ const CONFIG = {
 
     // Crowd Metrics & Detection
     DENSITY: {
-        GRID_SIZE: 50,
+        GRID_SIZE: 25,
         NORMAL_THRESHOLD: 3,
-        WARNING_THRESHOLD: 5,
-        DANGER_THRESHOLD: 8,
-        CRITICAL_THRESHOLD: 10
+        WARNING_THRESHOLD: 8,
+        DANGER_THRESHOLD: 15,
+        CRITICAL_THRESHOLD: 30
     },
 
     // Security Units
@@ -69,13 +70,20 @@ const CONFIG = {
     // Risk Calculation
     RISK: {
         GAUGE_MAX: 100,
-        CRUSH_RISK_WEIGHT: 0.4,
-        DENSITY_WEIGHT: 0.35,
+        CRUSH_RISK_WEIGHT: 0.3,
+        DENSITY_WEIGHT: 0.15,
         PANIC_WEIGHT: 0.25,
-        SAFE_THRESHOLD: 20,
-        WARNING_THRESHOLD: 50,
-        DANGER_THRESHOLD: 75
+        SAFE_THRESHOLD: 25,
+        WARNING_THRESHOLD: 60,
+        DANGER_THRESHOLD: 85,
+        // Scenario bias: how scenarios adjust effective thresholds (values are in percentage points)
+        SCENARIO_BIAS: {
+            surge: { warningDelta: 15, dangerDelta: 10 },
+            blockage: { warningDelta: 8, dangerDelta: 5 },
+            panic: { panicIndexTrigger: 0.2 }
+        }
     },
+
 
     // UI Updates
     UI: {
@@ -115,7 +123,7 @@ const CONFIG = {
 
     BACKEND: {
         BASE_URL: 'http://localhost:4000',
-        API_TOKEN: '' // Set a valid token for local backend integration
+        API_TOKEN: 'localtesttoken123' // Must match the backend API_TOKEN in backend/.env
     },
 
     // Colors
@@ -130,7 +138,7 @@ const CONFIG = {
 
     // Thresholds
     THRESHOLDS: {
-        BOTTLENECK_CRITICAL_DENSITY: 5,
+        BOTTLENECK_CRITICAL_DENSITY: 6,
         PANIC_THRESHOLD: 0.6,
         EVACUATION_TRIGGER: 0.8
     }

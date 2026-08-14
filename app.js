@@ -245,6 +245,43 @@ async function loadBackendRecommendations() {
 }
  
 /**
+ * Calculate peak local crowd density (max count in a 50x50 grid cell)
+ * @private
+ */
+function calculatePeakLocalDensity() {
+    try {
+        const particles = appState.get('particles') || [];
+        if (particles.length === 0) return 0;
+
+        const gridSize = CONFIG.DENSITY.GRID_SIZE || 50;
+        const grid = {};
+
+        particles.forEach(p => {
+            // Exclude particles close to entrance gates (spawning zone x < 120)
+            // to avoid artificial spawning density from inflating risk ratings.
+            if (p.x < 120) return;
+
+            const cx = Math.floor(p.x / gridSize);
+            const cy = Math.floor(p.y / gridSize);
+            const key = `${cx},${cy}`;
+            grid[key] = (grid[key] || 0) + 1;
+        });
+
+        // Instead of returning the single maximum cell (which is noisy), compute the 90th percentile
+        // of cell occupancies so alerts reflect broader crowding, not a single spike.
+        const counts = Object.values(grid);
+        if (counts.length === 0) return 0;
+        counts.sort((a,b) => a - b);
+        const idx = Math.max(0, Math.floor(0.9 * counts.length) - 1);
+        const percentile90 = counts[idx] || counts[counts.length - 1];
+        return percentile90;
+    } catch (error) {
+        console.error('Error calculating peak local density:', error);
+        return 0;
+    }
+}
+
+/**
  * Update all metrics based on current state
  */
 function updateMetrics() {
@@ -252,8 +289,8 @@ function updateMetrics() {
         const particles = appState.get('particles') || [];
         const scenario = appState.get('currentScenario');
 
-        // Calculate crowd density (people per m²)
-        const crowdDensity = particles.length > 0 ? Math.min(particles.length / 50, 10) : 0;
+        // Calculate peak local crowd density
+        const crowdDensity = calculatePeakLocalDensity();
 
         // Calculate average movement speed
         let totalSpeed = 0;
@@ -278,13 +315,13 @@ function updateMetrics() {
 
         likelihood = Math.round(Math.min(likelihood, 100));
 
-        // Determine crush risk level
+        // Determine crush risk level based on local density thresholds
         let crushRiskLevel = 'LOW';
-        if (crowdDensity > CONFIG.DENSITY.DANGER_THRESHOLD) {
+        if (crowdDensity >= CONFIG.DENSITY.CRITICAL_THRESHOLD) {
             crushRiskLevel = 'CRITICAL';
-        } else if (crowdDensity > CONFIG.DENSITY.WARNING_THRESHOLD) {
+        } else if (crowdDensity >= CONFIG.DENSITY.DANGER_THRESHOLD) {
             crushRiskLevel = 'HIGH';
-        } else if (crowdDensity > CONFIG.DENSITY.NORMAL_THRESHOLD) {
+        } else if (crowdDensity >= CONFIG.DENSITY.WARNING_THRESHOLD) {
             crushRiskLevel = 'MEDIUM';
         }
 
@@ -313,11 +350,23 @@ function updateMetrics() {
  * @private
  */
 function calculateCrushRisk(density) {
-    if (density > CONFIG.DENSITY.CRITICAL_THRESHOLD) return 100;
-    if (density > CONFIG.DENSITY.DANGER_THRESHOLD) return 75;
-    if (density > CONFIG.DENSITY.WARNING_THRESHOLD) return 50;
-    if (density > CONFIG.DENSITY.NORMAL_THRESHOLD) return 25;
-    return 0;
+    try {
+        // Scale crush risk proportionally to the configured CRITICAL_THRESHOLD instead of
+        // jumping between fixed buckets. This produces more graded alerting that follows
+        // the observed simulation values.
+        const crit = Number(CONFIG.DENSITY.CRITICAL_THRESHOLD) || 10;
+        if (density <= 0) return 0;
+        const scaled = Math.round((density / crit) * 100);
+        return Math.max(0, Math.min(100, scaled));
+    } catch (e) {
+        console.error('Error in calculateCrushRisk:', e);
+        // fall back to previous behavior
+        if (density >= CONFIG.DENSITY.CRITICAL_THRESHOLD) return 100;
+        if (density >= CONFIG.DENSITY.DANGER_THRESHOLD) return 75;
+        if (density >= CONFIG.DENSITY.WARNING_THRESHOLD) return 50;
+        if (density >= CONFIG.DENSITY.NORMAL_THRESHOLD) return 25;
+        return 0;
+    }
 }
 
 /**
@@ -362,13 +411,66 @@ function detectBottlenecks() {
  */
 function updateSystemStatus(likelihood) {
     try {
-        let status = 'active';
-        if (likelihood > CONFIG.RISK.DANGER_THRESHOLD) {
-            status = 'critical';
-        } else if (likelihood > CONFIG.RISK.WARNING_THRESHOLD) {
-            status = 'warning';
+        // Decide system status with scenario-aware rules and minimum crowd guard
+        const scenario = appState.get('currentScenario');
+        const particles = appState.get('particles') || [];
+        const count = particles.length || 0;
+
+            // Use metrics when deciding whether to suppress alerts for tiny crowds
+        const metrics = appState.get('metrics') || {};
+        const panicIndex = Number(metrics.panicIndex) || 0;
+        const reportedLikelihood = Number(metrics.stampedeLikelihood) || likelihood || 0;
+
+        // If there is essentially no crowd and metrics don't indicate risk, suppress alerts
+        if (count <= 5 && panicIndex < CONFIG.THRESHOLDS.PANIC_THRESHOLD && reportedLikelihood < CONFIG.RISK.WARNING_THRESHOLD) {
+            uiManager.updateSystemStatus('active');
+            uiManager.updatePhoneAlert('No Congestion Alerts', 'The crowd is moving smoothly.', 'safe');
+            return;
         }
+
+        // Compute effective thresholds based on scenario bias
+        let danger = Number(CONFIG.RISK.DANGER_THRESHOLD);
+        let warning = Number(CONFIG.RISK.WARNING_THRESHOLD);
+        const bias = CONFIG.RISK.SCENARIO_BIAS || {};
+
+        if (scenario === 'surge') {
+            warning = Math.max(0, warning - (bias.surge?.warningDelta || 15));
+            danger = Math.max(warning + 1, danger - (bias.surge?.dangerDelta || 10));
+        } else if (scenario === 'blockage') {
+            warning = Math.max(0, warning - (bias.blockage?.warningDelta || 8));
+            danger = Math.max(warning + 1, danger - (bias.blockage?.dangerDelta || 5));
+        }
+
+        // Scenario-aware mapping, but still driven by metrics (recommended behavior)
+        let status = 'active';
+
+        if (scenario === 'panic') {
+            // For panic, require either a measurable panicIndex or high likelihood before forcing critical
+            const panicTrigger = bias.panic?.panicIndexTrigger || CONFIG.THRESHOLDS.PANIC_THRESHOLD;
+            if (panicIndex >= panicTrigger || reportedLikelihood >= warning) {
+                status = 'critical';
+            } else if (reportedLikelihood > warning) {
+                status = 'warning';
+            } else {
+                status = 'active';
+            }
+        } else {
+            // Metric-driven with effective thresholds
+            if (reportedLikelihood > danger) status = 'critical';
+            else if (reportedLikelihood > warning) status = 'warning';
+            else status = 'active';
+        }
+
         uiManager.updateSystemStatus(status);
+
+        // Update phone alert message succinctly according to final status
+        if (status === 'active') {
+            uiManager.updatePhoneAlert('No Congestion Alerts', 'The crowd is moving smoothly.', 'safe');
+        } else if (status === 'warning') {
+            uiManager.updatePhoneAlert('Elevated Crowd Levels', 'Please monitor flow and consider deploying staff.', 'warning');
+        } else if (status === 'critical') {
+            uiManager.updatePhoneAlert('Critical Crowd Risk', 'Immediate action required: deploy interventions and follow emergency procedures.', 'danger');
+        }
     } catch (error) {
         console.error('Error updating system status:', error);
     }
