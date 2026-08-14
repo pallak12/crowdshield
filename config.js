@@ -39,9 +39,9 @@ const CONFIG = {
     DENSITY: {
         GRID_SIZE: 50,
         NORMAL_THRESHOLD: 3,
-        WARNING_THRESHOLD: 6,
-        DANGER_THRESHOLD: 10,
-        CRITICAL_THRESHOLD: 14
+        WARNING_THRESHOLD: 8,
+        DANGER_THRESHOLD: 15,
+        CRITICAL_THRESHOLD: 30
     },
 
     // Security Units
@@ -70,8 +70,8 @@ const CONFIG = {
     // Risk Calculation
     RISK: {
         GAUGE_MAX: 100,
-        CRUSH_RISK_WEIGHT: 0.4,
-        DENSITY_WEIGHT: 0.25,
+        CRUSH_RISK_WEIGHT: 0.3,
+        DENSITY_WEIGHT: 0.15,
         PANIC_WEIGHT: 0.25,
         SAFE_THRESHOLD: 25,
         WARNING_THRESHOLD: 60,
