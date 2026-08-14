@@ -267,13 +267,14 @@ function calculatePeakLocalDensity() {
             grid[key] = (grid[key] || 0) + 1;
         });
 
-        let peakCount = 0;
-        for (const key in grid) {
-            if (grid[key] > peakCount) {
-                peakCount = grid[key];
-            }
-        }
-        return peakCount;
+        // Instead of returning the single maximum cell (which is noisy), compute the 90th percentile
+        // of cell occupancies so alerts reflect broader crowding, not a single spike.
+        const counts = Object.values(grid);
+        if (counts.length === 0) return 0;
+        counts.sort((a,b) => a - b);
+        const idx = Math.max(0, Math.floor(0.9 * counts.length) - 1);
+        const percentile90 = counts[idx] || counts[counts.length - 1];
+        return percentile90;
     } catch (error) {
         console.error('Error calculating peak local density:', error);
         return 0;
