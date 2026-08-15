@@ -1,0 +1,35 @@
+<!-- mobile/index.html - This will serve as your mobile app -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ff4444">
+    <link rel="manifest" href="manifest.json">
+    <title>CrowdShield - Citizen Safety</title>
+</head>
+<body>
+    <div id="app">
+        <!-- Main Screen -->
+        <div id="home-screen">
+            <h1>🛡️ CrowdShield</h1>
+            <p>Your personal crowd safety assistant</p>
+            <div id="current-location">
+                <span>📍 Your Location: <span id="location-display">Detecting...</span></span>
+            </div>
+            <div id="alert-banner" class="hidden">
+                <span class="alert-icon">⚠️</span>
+                <span id="alert-message">High crowd density ahead!</span>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav>
+            <button onclick="showScreen('home')">🏠 Home</button>
+            <button onclick="showScreen('alerts')">🔔 Alerts</button>
+            <button onclick="showScreen('report')">📢 Report</button>
+            <button onclick="showScreen('settings')">⚙️ Settings</button>
+        </nav>
+    </div>
+</body>
+</html>

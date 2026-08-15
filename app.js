@@ -12,7 +12,7 @@ let securityUnits = [];
 // Animation loop control
 let animationFrameId = null;
 let lastFrameTime = 0;
-
+import { BACKEND } from './config.js';
 /**
  * Initialize the entire application
  */
@@ -693,4 +693,34 @@ if (typeof module !== 'undefined' && module.exports) {
         updateMetrics,
         calculateAIRecommendations
     };
+}
+// app.js - Add real-time prediction loop
+async function updatePredictions() {
+    const crowdData = getCurrentCrowdState();
+    const response = await fetch('/api/predict', {
+        method: 'POST',
+        body: JSON.stringify({ crowdData })
+    });
+    const predictions = await response.json();
+    updateDashboardWithPredictions(predictions);
+    
+    if (predictions.crush_likelihood > 0.7) {
+        triggerAlert('HIGH_RISK_CRUSH_IMMINENT');
+    }
+}
+setInterval(updatePredictions, 5000); // Update every 5 seconds
+
+async function fetchRecommendations() {
+    try {
+        const response = await fetch(`${BACKEND.BASE_URL}${BACKEND.ENDPOINTS.RECOMMENDATIONS}`, {
+            headers: {
+                'Authorization': `Bearer ${BACKEND.API_TOKEN}`
+            }
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        return null;
+    }
 }

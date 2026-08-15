@@ -161,3 +161,15 @@ function initializeVenueConfig(canvasWidth, canvasHeight) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CONFIG, initializeVenueConfig };
 }
+// config.js - Update this file
+export const BACKEND = {
+    BASE_URL: 'http://localhost:4000',  // Change from 8000 to 4000
+    API_TOKEN: 'your_secure_token_here',
+    ENDPOINTS: {
+        PREDICT: '/api/predict',
+        RECOMMENDATIONS: '/api/recommendations',
+        LOG: '/api/log',
+        ACTION: '/api/action',
+        HEALTH: '/api/health'
+    }
+};
