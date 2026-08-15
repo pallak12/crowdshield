@@ -394,3 +394,22 @@ const uiManager = new UIManager();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { UIManager, uiManager };
 }
+
+// ui-updates.js
+function displayRecommendations(recommendations) {
+    const list = document.getElementById('recommendations-list');
+    list.innerHTML = recommendations.map(rec => `
+        <li class="recommendation priority-${rec.priority}">
+            <span class="action-icon">${getIconForAction(rec.action)}</span>
+            <span class="action-message">${rec.message}</span>
+            <button onclick="acknowledgeRecommendation('${rec.action}')">Acknowledge</button>
+        </li>
+    `).join('');
+}
+
+// Auto-refresh recommendations every 10 seconds
+setInterval(async () => {
+    const response = await fetch('/api/recommendations');
+    const data = await response.json();
+    displayRecommendations(data.recommendations);
+}, 10000);

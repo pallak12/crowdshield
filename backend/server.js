@@ -164,3 +164,69 @@ app.listen(PORT, () => {
   console.log(`CrowdShield backend stub listening on http://localhost:${PORT}`);
   console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
 });
+// backend/server.js
+app.post('/api/predict', async (req, res) => {
+    const { crowdData } = req.body;
+    const features = extractFeatures(crowdData);
+    const prediction = await mlModel.predict(features);
+    
+    res.json({
+        crush_likelihood: prediction.crush_probability,
+        stampede_risk: prediction.stampede_score,
+        time_to_crush: prediction.estimated_minutes,
+        panic_propagation: prediction.panic_spread_rate
+    });
+});
+// backend/server.js
+app.post('/api/recommendations', async (req, res) => {
+    const { state } = req.body;
+    const recommendations = recommendationEngine.generateRecommendations(state);
+    res.json({ recommendations });
+});
+
+// Also add a GET endpoint for manual refresh
+app.get('/api/recommendations', async (req, res) => {
+    const currentState = getCurrentState();
+    const recommendations = recommendationEngine.generateRecommendations(currentState);
+    res.json({ recommendations });
+});
+
+// backend/server.js - Add this after your middleware
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'online', 
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+            health: '/api/health',
+            recommendations: '/api/recommendations',
+            predict: '/api/predict',
+            log: '/api/log',
+            action: '/api/action'
+        }
+    });
+});
+
+// Also add the recommendations endpoint if missing
+app.get('/api/recommendations', (req, res) => {
+    res.json({
+        recommendations: [
+            {
+                id: 1,
+                action: 'MONITOR_SECTOR_A',
+                message: 'Monitor Sector A - increasing density detected',
+                priority: 'HIGH',
+                timestamp: new Date().toISOString()
+            },
+            {
+                id: 2,
+                action: 'OPEN_EXIT_C',
+                message: 'Consider opening Exit C to distribute crowd',
+                priority: 'MEDIUM',
+                timestamp: new Date().toISOString()
+            }
+        ]
+    });
+});s
